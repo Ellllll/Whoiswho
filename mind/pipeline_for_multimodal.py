@@ -93,7 +93,7 @@ set_seed(training_args.seed)
 
 config = AutoConfig.from_pretrained(model_args.model_name_or_path, trust_remote_code=True)
 config.use_cache = False
-# config._attn_implementation = "flash_attention_2" #use flash attention
+config._attn_implementation = "eager" #use flash attention
 config.model_args = model_args
 tokenizer = AutoTokenizer.from_pretrained(model_args.model_name_or_path, trust_remote_code=True)
 
@@ -110,9 +110,9 @@ if 'chatglm3' in model_args.model_name_or_path:
 
 else:
     if "Llama" in model_args.model_name_or_path:
-        model = LlamaModelForIND.from_pretrained(model_args.model_name_or_path, torch_dtype=dtype ,config=config, trust_remote_code=True,attn_implementation="flash_attention_2").cuda()
+        model = LlamaModelForIND.from_pretrained(model_args.model_name_or_path, torch_dtype=dtype ,config=config, trust_remote_code=True,attn_implementation="eager").cuda()
     elif "Qwen2" in model_args.model_name_or_path:
-        model = Qwen2ModelForIND.from_pretrained(model_args.model_name_or_path, torch_dtype=dtype ,config=config, trust_remote_code=True,attn_implementation="flash_attention_2").cuda()
+        model = Qwen2ModelForIND.from_pretrained(model_args.model_name_or_path, torch_dtype=dtype ,config=config, trust_remote_code=True,attn_implementation="eager").cuda()
 
     if tokenizer.pad_token is None:
         special_token_dict["pad_token"] = DEFAULT_PAD_TOKEN
@@ -202,14 +202,25 @@ peft_config = LoraConfig(
     lora_dropout=model_args.lora_dropout,
 )
 model = get_peft_model(model, peft_config).cuda() 
+
+# ========== 新增：打印 LoRA 加载关键日志 ==========
+logger.info(f"🔍 LoRA 配置：lora_ckpt_path = {model_args.lora_ckpt_path}")
+if model_args.lora_ckpt_path:
+    logger.info(f"📌 开始加载 LoRA 权重，路径：{model_args.lora_ckpt_path}")
+else:
+    logger.warning(f"❌ 未指定 lora_ckpt_path，LoRA 权重不会加载！")
+
 if model_args.lora_ckpt_path:  # load lora checkpoint, maybe modified
     if os.path.exists(os.path.join(model_args.lora_ckpt_path, "pytorch_model.bin")):
         paras_path = os.path.join(model_args.lora_ckpt_path, "pytorch_model.bin")
+        logger.info(f"✅ 找到 LoRA 权重文件：{paras_path}")
     elif os.path.exists(os.path.join(model_args.lora_ckpt_path, "adapter_model.bin")):
         paras_path = os.path.join(model_args.lora_ckpt_path, "adapter_model.bin")
+        logger.info(f"✅ 找到 LoRA 权重文件：{paras_path}")
     else:
         raise ValueError("pytorch_model.bin or adapter_model.bin not found in the lora checkpoint")
     ckpt = torch.load(paras_path)
+    logger.info(f"✅ 成功加载 LoRA 权重文件，权重数量：{len(ckpt.keys())}")
 
     for k, v in model.named_parameters():
         if "lora" in k:
@@ -230,6 +241,12 @@ if model_args.lora_ckpt_path:  # load lora checkpoint, maybe modified
         loading_res = model.load_state_dict(modified_ckpt,strict = False)
     else:
         loading_res = model.load_state_dict(ckpt,strict = False)
+
+        # ========== 新增：打印加载结果 ==========
+    logger.info(f"✅ LoRA 权重加载完成！")
+    logger.info(f"   - 缺失的权重键：{loading_res.missing_keys}")
+    logger.info(f"   - 意外的权重键：{loading_res.unexpected_keys}")
+    
     assert loading_res.unexpected_keys == [], f"missing keys: {loading_res.missing_keys}"
     model = model.cuda()
 if model_args.text_proj_ckpt_path:

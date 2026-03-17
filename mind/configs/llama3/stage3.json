@@ -1,5 +1,5 @@
 {
-    "model_name_or_path":"LLM-Research/Meta-Llama-3-8B",
+    "model_name_or_path":"/home/yang1078/models/Meta-Llama-3-8B",
     "ptm_model_path":"roberta",
     "author_data":"data/IND-WhoIsWho/train_author.json",
     "pub_data":"data/IND-WhoIsWho/pid_to_info_all.json",

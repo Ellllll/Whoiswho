@@ -397,29 +397,92 @@ def cal_auc_map(pred, ground_truth):
     data_dict = pred
     labels_dict = ground_truth
 
+    # 新增：记录缺失样本的统计信息
+    missing_authors = []       # 缺失的作者ID列表
+    missing_papers = []        # 缺失的(作者ID, 论文ID)列表
+    valid_sample_count = 0     # 有效样本数
+    total_sample_count = 0     # 原始总样本数
+
     total_w = 0
     total_auc = 0
     total_ap = 0
     for aid in labels_dict:
+        # 1. 跳过无预测结果的作者
+        if aid not in data_dict:
+            missing_authors.append(aid)
+            continue
+
         cur_normal_data = labels_dict[aid]["normal_data"]
         cur_outliers = labels_dict[aid]["outliers"]
+
+        # 统计该作者的原始总样本数
+        total_sample_count += len(cur_normal_data) + len(cur_outliers)
+
         cur_labels = []
         cur_preds = []
         cur_w = len(cur_outliers)
+
         for item in cur_normal_data:
-            cur_labels.append(1)
-            cur_preds.append(data_dict[aid][item])
-            # cur_preds.append(1)
+            # 2. 处理正样本，跳过无预测的论文
+            if item in data_dict[aid]:
+                cur_labels.append(1)
+                cur_preds.append(data_dict[aid][item])
+                # cur_preds.append(1)
+                valid_sample_count += 1
+            else:
+                missing_papers.append((aid, item))
+
+            # cur_labels.append(1)
+            # cur_preds.append(data_dict[aid][item])
+            # # cur_preds.append(1)
+
         for item in cur_outliers:
-            cur_labels.append(0)
-            cur_preds.append(data_dict[aid][item])
-            # cur_preds.append(0)
-        cur_auc = roc_auc_score(cur_labels, cur_preds)
-        cur_map = average_precision_score(cur_labels, cur_preds)
-        total_ap += cur_w * cur_map
-        total_auc += cur_w * cur_auc
-        total_w += cur_w
+            # 3. 处理负样本，跳过无预测的论文
+            if item in data_dict[aid]:
+                cur_labels.append(0)
+                cur_preds.append(data_dict[aid][item])
+                valid_sample_count += 1
+            else:
+                missing_papers.append((aid, item))
+                
+            # cur_labels.append(0)
+            # cur_preds.append(data_dict[aid][item])
+            # # cur_preds.append(0)
+
+        # 4. 跳过无有效样本的作者
+        if len(cur_preds) < 2 or len(set(cur_labels)) < 2:
+            continue
         
+        # 5. 计算指标
+        try:
+            cur_auc = roc_auc_score(cur_labels, cur_preds)
+            cur_map = average_precision_score(cur_labels, cur_preds)
+            total_ap += cur_w * cur_map
+            total_auc += cur_w * cur_auc
+            total_w += cur_w
+        except Exception as e:
+            logger.error(f"作者 {aid} 指标计算失败：{e}")
+            continue
+
+        # cur_auc = roc_auc_score(cur_labels, cur_preds)
+        # cur_map = average_precision_score(cur_labels, cur_preds)
+        # total_ap += cur_w * cur_map
+        # total_auc += cur_w * cur_auc
+        # total_w += cur_w
+
+    # 打印缺失样本统计（关键：知道舍弃了多少）
+    logger.info(f"===== 样本统计 =====")
+    logger.info(f"原始总样本数: {total_sample_count}")
+    logger.info(f"有效样本数: {valid_sample_count}")
+    logger.info(f"缺失作者数: {len(missing_authors)} (前5个: {missing_authors[:5]})")
+    logger.info(f"缺失论文数: {len(missing_papers)} (前5个: {missing_papers[:5]})")
+    logger.info(f"样本有效率: {valid_sample_count/total_sample_count*100:.2f}%" if total_sample_count>0 else "无样本")
+
+    # 避免除以0
+    if total_w == 0:
+        logger.error("无有效样本参与计算，返回默认值")
+        return 0.0, 0.0
+
     mAP = total_ap / total_w
     avg_auc = total_auc / total_w
     return avg_auc,mAP 
