@@ -108,13 +108,13 @@ if 'glm' in model_args.model_name_or_path:
 
     # from bin.modeling_chatglm import ChatGLMForConditionalGeneration
     # model = ChatGLMForConditionalGeneration.from_pretrained(model_args.model_name_or_path, torch_dtype=dtype ,config=config, trust_remote_code=True,empty_init=False,attn_implementation="flash_attention_2").cuda()
-    model = GLMModelforIND.from_pretrained(model_args.model_name_or_path, torch_dtype=dtype ,config=config, trust_remote_code=True,empty_init=False,attn_implementation="flash_attention_2").cuda()
+    model = GLMModelforIND.from_pretrained(model_args.model_name_or_path, torch_dtype=dtype ,config=config, trust_remote_code=True,empty_init=False,attn_implementation="eager", low_cpu_mem_usage=True, device_map="auto")
 
 
 elif "Llama" in model_args.model_name_or_path:
-    model = LlamaModelForIND.from_pretrained(model_args.model_name_or_path, torch_dtype=dtype ,config=config, trust_remote_code=True,attn_implementation="flash_attention_2").cuda()
+    model = LlamaModelForIND.from_pretrained(model_args.model_name_or_path, torch_dtype=dtype ,config=config, trust_remote_code=True,attn_implementation="eager", low_cpu_mem_usage=True, device_map="auto")
 elif "Qwen2" in model_args.model_name_or_path:
-    model = Qwen2ModelForIND.from_pretrained(model_args.model_name_or_path, torch_dtype=dtype ,config=config, trust_remote_code=True,attn_implementation="flash_attention_2").cuda()
+    model = Qwen2ModelForIND.from_pretrained(model_args.model_name_or_path, torch_dtype=dtype ,config=config, trust_remote_code=True,attn_implementation="eager", low_cpu_mem_usage=True, device_map="auto")
 
 
 if tokenizer.pad_token is None:

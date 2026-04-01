@@ -1,6 +1,6 @@
 {
-    "model_name_or_path":"/home/yang1078/models/Meta-Llama-3-8B",
-    "ptm_model_path":"/home/yang1078/models/roberta-base",
+    "model_name_or_path":"/projects/whoiswho/model/Meta-Llama-3-8B",
+    "ptm_model_path":"/projects/whoiswho/model/roberta-base",
     "author_data":"data/IND-WhoIsWho/train_author.json",
     "pub_data":"data/IND-WhoIsWho/pid_to_info_all.json",
     "eval_data":"data/IND-WhoIsWho/ind_valid_author.json",
@@ -12,7 +12,7 @@
     "lora_rank":8,
     "lora_alpha":16,
     "lora_dropout":0.05,
-    "lora_ckpt_path": "/home/yang1078/proj/WhoIsWho/mind/output/llama3/stage1/checkpoint-140",
+    "lora_ckpt_path": "output/llama3/stage1/checkpoint-140",
 
     "enable_llm_requires_grad": true,
 

@@ -110,9 +110,9 @@ if 'chatglm3' in model_args.model_name_or_path:
 
 else:
     if "Llama" in model_args.model_name_or_path:
-        model = LlamaModelForIND.from_pretrained(model_args.model_name_or_path, torch_dtype=dtype ,config=config, trust_remote_code=True,attn_implementation="eager").cuda()
+        model = LlamaModelForIND.from_pretrained(model_args.model_name_or_path, torch_dtype=dtype ,config=config, trust_remote_code=True,attn_implementation="eager", low_cpu_mem_usage=True, device_map="auto")
     elif "Qwen2" in model_args.model_name_or_path:
-        model = Qwen2ModelForIND.from_pretrained(model_args.model_name_or_path, torch_dtype=dtype ,config=config, trust_remote_code=True,attn_implementation="eager").cuda()
+        model = Qwen2ModelForIND.from_pretrained(model_args.model_name_or_path, torch_dtype=dtype ,config=config, trust_remote_code=True,attn_implementation="eager", low_cpu_mem_usage=True, device_map="auto")
 
     if tokenizer.pad_token is None:
         special_token_dict["pad_token"] = DEFAULT_PAD_TOKEN

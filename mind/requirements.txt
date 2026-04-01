@@ -7,5 +7,4 @@ wandb==0.16.6
 cogdl==0.6
 transformers==4.37.2
 deepspeed==0.13.1
-flash-attn==2.4.2
 unidecode

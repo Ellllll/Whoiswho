@@ -151,6 +151,8 @@ class LlamaModelForIND(LlamaPreTrainedModel):
         # if self.config.model_args.enable_text_proj_requires_grad or self.config.model_args.enable_graph_proj_requires_grad:
         #     inputs_embeds = inputs_embeds.detach()
         inputs_embeds = inputs_embeds.clone()
+        # print("yfx inputs_embeds shape:", inputs_embeds.shape)
+        # print("yfx input_ids shape:", input_ids.shape)
 
         if self.config.model_args.use_emb:
             if self.config.model_args.use_oagbert:
@@ -180,16 +182,34 @@ class LlamaModelForIND(LlamaPreTrainedModel):
                     output_attentions=False,
                 )[0].transpose(0,1)
             elif self.config.model_args.text_proj == "linear":
+                # print("yfx before pooling ptm_last_hidden_states.shape:", ptm_last_hidden_states.shape)  # 正常是 [1, 309, 768]
+
+                # print("yfx attention_mask.shape:", text_inputs['attention_mask'].shape)  # 正常是 [1, 309]
+                # print("yfx attention_mask.sum(dim=1):", text_inputs['attention_mask'].sum(dim=1))  # 正常是 309（有效 token 数）
+
+                # print("yfx input_ids.shape:", text_inputs['input_ids'].shape)  # 正常是 [1, 309]，异常是 [309, 1]
+
                 text_embeds = (ptm_last_hidden_states*text_inputs['attention_mask'].unsqueeze(-1)).sum(dim=1)/text_inputs['attention_mask'].sum(dim=1).unsqueeze(-1)
-                text_embeds = self.text_proj(text_embeds)                
+                
+                # print("yfx after pooling ptm_last_hidden_states.shape:", ptm_last_hidden_states.shape)  # 正常是 [1, 309, 768]
+                # print("yfx池化后 shape:", text_embeds.shape)  # 正常池化后是 [1, 768]，没池化是 [1, 309, 768]
+                
+                text_embeds = self.text_proj(text_embeds)
+                # print("yfx投影后 shape:", text_embeds.shape)  # 正常池化后是 [1, 768]，没池化是 [1, 309, 768]               
 
             embedding_ids = torch.masked_select(torch.arange(input_ids.shape[-1], device = self.device).unsqueeze(0), input_ids == self.EMBED_TOKEN_IDS) # need define add special token
+
+            # print("yfx embedding_ids 长度:", len(embedding_ids))
+            
             inputs_embeds[:,embedding_ids] = text_embeds
 
         if self.config.model_args.use_graph:
             if graph_emb.shape[0] !=0:
                 graph_ids = torch.masked_select(torch.arange(input_ids.shape[-1], device = self.device).unsqueeze(0), input_ids == self.GRAPH_TOKEN_IDS)
                 inputs_embeds[:,graph_ids] = self.graph_proj(graph_emb.to(self.dtype))
+                # print("yfx inputs_embeds 长度:", inputs_embeds.shape)
+                # print("yfx graph_ids 长度:", graph_ids.shape)
+                # print("yfx graph_emb 长度:", graph_emb.shape)
         
         labels_pos = torch.masked_select(torch.arange(input_ids.shape[-1], device = self.device), input_ids == self.LABEL_TOKEN_IDS)
 
@@ -270,6 +290,16 @@ class LlamaModelForIND(LlamaPreTrainedModel):
         #         attentions=outputs.attentions,
         #         score=score
         #     )
+
+        # # ========== 在这里加打印！（return 之前） ==========
+        # # 打印 graph_proj 权重的 requires_grad 状态
+        # print(f"[DEBUG] yfx graph_proj gate.weight.requires_grad: {self.graph_proj.gate.weight.requires_grad}")
+        # # 打印 graph_proj 权重的梯度（反向传播后才会有值）
+        # if self.graph_proj.gate.weight.grad is not None:
+        #     print(f"[DEBUG] yfx graph_proj gate.weight.grad norm: {self.graph_proj.gate.weight.grad.norm().item():.6f}")
+        # else:
+        #     print("[DEBUG] yfx graph_proj gate.weight.grad is None (梯度未传回！)")
+
 
         if not return_dict:
             output = (lm_logits,) + outputs[1:]

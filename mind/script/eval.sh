@@ -1,5 +1,5 @@
 set -ex
-pip install -r requirements.txt
+# pip install -r requirements.txt
 
 
 # NUM_GPUS=8

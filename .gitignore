@@ -3,3 +3,5 @@ __pycache__/
 .idea/
 mind/stage*_*.out
 mind/stage*_*.err
+mind/eval_*.out
+mind/eval_*.err

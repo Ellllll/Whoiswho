@@ -244,6 +244,7 @@ class INDPacking(Dataset): #for train data
             graph_emb = torch.cat([graph_emb,torch.tensor(self.graph_emb[author_id]['graph'],dtype=torch.float32).expand(graph_emb.shape[0],-1)],dim=-1) #to debuged
         if self.use_emb:
             ptm_papers = globals+locals
+            # print("yfx ptm_papers shape:", ptm_papers.shape)
             if self.model_args.text_feature == "title":
                 ptm_papers_txt = [self.pub[p]['title'] for p in ptm_papers]
             else:
