@@ -1,11 +1,10 @@
 #!/bin/bash
 #SBATCH --job-name=mind_eval
-#SBATCH --gres=gpu:1
+#SBATCH --gres=gpu:a6000:1
 #SBATCH --nodelist=gpu-a6000-1
-#SBATCH --constraint=gpu
 #SBATCH --time=12:00:00
-#SBATCH --output=eval_%j.out
-#SBATCH --error=eval_%j.err
+#SBATCH --output=../log/mind/eval_%j.out
+#SBATCH --error=../log/mind/eval_%j.err
 #SBATCH --mem=128G
 #SBATCH --cpus-per-task=16  # 关键！给1个进程分配16核CPU（8核/进程是最低标准）
 
@@ -23,7 +22,7 @@ do
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] GPU MEM: $gpu_mem | CPU MEM: $cpu_mem"
     sleep 1
 done
-) > resource_monitor.log &
+) > ../log/mind/eval_resource_monitor.log &
 
 # 保存监控进程 PID
 MONITOR_PID=$!

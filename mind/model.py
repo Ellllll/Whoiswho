@@ -166,6 +166,13 @@ class LlamaModelForIND(LlamaPreTrainedModel):
                 with torch.no_grad(): 
                     ptm_outputs = self.ptm(**text_inputs)
                     ptm_last_hidden_states = ptm_outputs.last_hidden_state
+                # 🔥 专门修复 Roberta FP16 爆炸！强制清理 NaN/Inf
+                ptm_last_hidden_states = torch.nan_to_num(
+                    ptm_last_hidden_states,
+                    nan=0.0,
+                    posinf=0.0,
+                    neginf=0.0
+                )
 
             if self.config.model_args.text_proj == "qformer":
                 text_embeds = self.text_proj(
@@ -189,14 +196,39 @@ class LlamaModelForIND(LlamaPreTrainedModel):
 
                 # print("yfx input_ids.shape:", text_inputs['input_ids'].shape)  # 正常是 [1, 309]，异常是 [309, 1]
 
+                # # ===================== 【DEBUG：检查文本输入是否异常】 =====================
+                # print("="*80)
+                # print("[DEBUG] 检查文本输入是否异常")
+                # print(f"[DEBUG] text_inputs['input_ids'].shape = {text_inputs['input_ids'].shape}")
+                # print(f"[DEBUG] text_inputs['attention_mask'].shape = {text_inputs['attention_mask'].shape}")
+
+                # # 检查每个样本有效 token 数量
+                # mask_sum_per_sample = text_inputs['attention_mask'].sum(dim=1)
+                # print(f"[DEBUG] 每个样本有效 token 数：{mask_sum_per_sample}")
+
+                # # 检查有没有样本 = 0（致命！）
+                # has_empty_text = (mask_sum_per_sample == 0).any().item()
+                # print(f"[DEBUG] 是否存在【空文本】（有效token=0）：{has_empty_text}")
+
+                # # 打印出问题的样本 index
+                # if has_empty_text:
+                #     empty_indices = torch.where(mask_sum_per_sample == 0)[0]
+                #     print(f"[DEBUG] 出问题的样本索引：{empty_indices}")
+                # print("="*80)
+
+                # print("🔥 [yfx] ptm_last_hidden_states 有 NaN？", torch.isnan(ptm_last_hidden_states).any().item())
+
                 text_embeds = (ptm_last_hidden_states*text_inputs['attention_mask'].unsqueeze(-1)).sum(dim=1)/text_inputs['attention_mask'].sum(dim=1).unsqueeze(-1)
                 
+                # ===== 【这里查：投影之前就已经是 NaN 了吗？】 =====
+                # print("🔥 [yfx] 【投影前】text_embeds 有 NaN？", torch.isnan(text_embeds).any().item())
                 # print("yfx after pooling ptm_last_hidden_states.shape:", ptm_last_hidden_states.shape)  # 正常是 [1, 309, 768]
                 # print("yfx池化后 shape:", text_embeds.shape)  # 正常池化后是 [1, 768]，没池化是 [1, 309, 768]
                 
                 text_embeds = self.text_proj(text_embeds)
                 # print("yfx投影后 shape:", text_embeds.shape)  # 正常池化后是 [1, 768]，没池化是 [1, 309, 768]               
 
+            # print("🔥 yfx text_proj 输出有没有 NaN：", torch.isnan(text_embeds).any().item())
             embedding_ids = torch.masked_select(torch.arange(input_ids.shape[-1], device = self.device).unsqueeze(0), input_ids == self.EMBED_TOKEN_IDS) # need define add special token
 
             # print("yfx embedding_ids 长度:", len(embedding_ids))
@@ -207,6 +239,9 @@ class LlamaModelForIND(LlamaPreTrainedModel):
             if graph_emb.shape[0] !=0:
                 graph_ids = torch.masked_select(torch.arange(input_ids.shape[-1], device = self.device).unsqueeze(0), input_ids == self.GRAPH_TOKEN_IDS)
                 inputs_embeds[:,graph_ids] = self.graph_proj(graph_emb.to(self.dtype))
+                # 加一行检查
+                # print("yfx 当前 graph_proj 类型:", self.config.model_args.graph_proj)
+                # print("yfx graph_proj 输出有没有 NaN：", torch.isnan(inputs_embeds[:, graph_ids]).any().item())
                 # print("yfx inputs_embeds 长度:", inputs_embeds.shape)
                 # print("yfx graph_ids 长度:", graph_ids.shape)
                 # print("yfx graph_emb 长度:", graph_emb.shape)
@@ -246,6 +281,29 @@ class LlamaModelForIND(LlamaPreTrainedModel):
 
 
         if labels is not None:
+            # # ====================== 在这里全部打印 ======================
+            # print("="*80)
+            # print(f"[DEBUG] 原始 labels = {labels}")
+            # print(f"[DEBUG] labels_pos 位置 = {labels_pos}")
+            # print(f"[DEBUG] labels_pos 个数 = {len(labels_pos)}")
+            # print(f"[DEBUG] lm_logits shape = {lm_logits.shape}")
+            # print(f"[DEBUG] logits max = {lm_logits.max().item()}")
+            # print(f"[DEBUG] logits min = {lm_logits.min().item()}")
+
+            # # 🔥 修复版：只看 label_pos 位置的 YES/NO，不看整个序列！
+            # if len(labels_pos) > 0:
+            #     yes_val = lm_logits[:, labels_pos, self.YES_TOKEN_IDS].mean().item()
+            #     no_val = lm_logits[:, labels_pos, self.NO_TOKEN_IDS].mean().item()
+            #     print(f"[DEBUG] 【LABEL位置】YES token logit 平均 = {yes_val}")
+            #     print(f"[DEBUG] 【LABEL位置】NO token logit 平均 = {no_val}")
+
+            # # 看 label 对不对
+            # masked_labels = torch.ones_like(input_ids, device=self.device, dtype=torch.long) * -100
+            # masked_labels[:, labels_pos] = torch.tensor([self.YES_TOKEN_IDS if l == 1 else self.NO_TOKEN_IDS for l in labels], device=self.device).unsqueeze(0)
+            # print(f"[DEBUG] 有效 label 数量 = {(masked_labels != -100).sum().item()}")
+            # print("="*80)
+            # # ====================== 打印结束 ======================
+
             lm_logits = lm_logits.float()
 
             masked_labels = torch.ones_like(input_ids,device= self.device,dtype = torch.long)*-100

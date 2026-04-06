@@ -242,6 +242,14 @@ class INDPacking(Dataset): #for train data
             graph_emb = [self.graph_emb[author_id][i] for i in globals +locals]
             graph_emb = torch.tensor(graph_emb,dtype=torch.float32)
             graph_emb = torch.cat([graph_emb,torch.tensor(self.graph_emb[author_id]['graph'],dtype=torch.float32).expand(graph_emb.shape[0],-1)],dim=-1) #to debuged
+        
+            # # ================== 你就加在这里！！！ ==================
+            # print("\n===== ✅ yfx检查 graph_emb 是否正确加载 =====")
+            # print("graph_emb 形状：", graph_emb.shape)
+            # print("graph_emb 有没有 NaN：", torch.isnan(graph_emb).any().item())
+            # print("graph_emb 有没有 Inf：", torch.isinf(graph_emb).any().item())
+            # print("=====================================================\n")
+        
         if self.use_emb:
             ptm_papers = globals+locals
             # print("yfx ptm_papers shape:", ptm_papers.shape)

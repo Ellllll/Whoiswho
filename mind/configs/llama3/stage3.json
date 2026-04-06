@@ -46,5 +46,6 @@
     "seed": 42,
     "save_steps": 10,
     "eval_steps": 10,
-    "save_only_model": true
+    "save_only_model": true,
+    "deepspeed": "configs/ds_zero_1.json"
 }

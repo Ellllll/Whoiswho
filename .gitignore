@@ -1,7 +1,5 @@
 __pycache__/
 .DS_Store
 .idea/
-mind/stage*_*.out
-mind/stage*_*.err
-mind/eval_*.out
-mind/eval_*.err
+log/
+doc/

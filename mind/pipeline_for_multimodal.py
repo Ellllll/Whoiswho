@@ -93,7 +93,7 @@ set_seed(training_args.seed)
 
 config = AutoConfig.from_pretrained(model_args.model_name_or_path, trust_remote_code=True)
 config.use_cache = False
-config._attn_implementation = "eager" #use flash attention
+# config._attn_implementation = "flash_attention_2" #use flash attention
 config.model_args = model_args
 tokenizer = AutoTokenizer.from_pretrained(model_args.model_name_or_path, trust_remote_code=True)
 
@@ -110,9 +110,9 @@ if 'chatglm3' in model_args.model_name_or_path:
 
 else:
     if "Llama" in model_args.model_name_or_path:
-        model = LlamaModelForIND.from_pretrained(model_args.model_name_or_path, torch_dtype=dtype ,config=config, trust_remote_code=True,attn_implementation="eager", low_cpu_mem_usage=True, device_map="auto")
+        model = LlamaModelForIND.from_pretrained(model_args.model_name_or_path, torch_dtype=dtype ,config=config, trust_remote_code=True,attn_implementation="flash_attention_2").cuda()
     elif "Qwen2" in model_args.model_name_or_path:
-        model = Qwen2ModelForIND.from_pretrained(model_args.model_name_or_path, torch_dtype=dtype ,config=config, trust_remote_code=True,attn_implementation="eager", low_cpu_mem_usage=True, device_map="auto")
+        model = Qwen2ModelForIND.from_pretrained(model_args.model_name_or_path, torch_dtype=dtype ,config=config, trust_remote_code=True,attn_implementation="flash_attention_2").cuda()
 
     if tokenizer.pad_token is None:
         special_token_dict["pad_token"] = DEFAULT_PAD_TOKEN
@@ -256,6 +256,13 @@ if model_args.text_proj_ckpt_path:
         if "text_proj" in k:
             text_state_dict[k] = v
     loading_res = model.load_state_dict(text_state_dict, strict=False)
+    # ###########################################################
+    # print("="*60)
+    # print("🔥 yfx【检查 Stage2 text_proj 权重是否干净】")
+    # for name, param in model.named_parameters():
+    #     if "text_proj" in name:
+    #         print(f"📌 {name}  has nan: {torch.isnan(param).any().item()}")
+    # print("="*60)
     assert loading_res.unexpected_keys == [], f"missing keys: {loading_res.missing_keys}"
 
 if model_args.graph_proj_ckpt_path:

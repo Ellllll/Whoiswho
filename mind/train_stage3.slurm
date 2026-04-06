@@ -4,8 +4,8 @@
 #SBATCH --nodelist=gpu-pro6000-1
 #SBATCH --constraint=gpu
 #SBATCH --time=12:00:00
-#SBATCH --output=stage3_%j.out
-#SBATCH --error=stage3_%j.err
+#SBATCH --output=../log/mind/stage3_%j.out
+#SBATCH --error=../log/mind/stage3_%j.err
 #SBATCH --mem=128G
 #SBATCH --cpus-per-task=16  # 关键！给1个进程分配16核CPU（8核/进程是最低标准）
 

@@ -376,6 +376,54 @@ class GLMTrainer(Trainer):
         
 
     def get_logits(self, logits, inputs): #only for IND task
+        # # ==========================
+        # # 1. 打印 logits 的完整形状（最重要）
+        # # ==========================
+        # print("\n===== 🔍 DEBUG logits 结构 =====")
+        # print(f"logits 形状: {logits.shape}")
+        # print(f"logits 设备: {logits.device}")
+        # print(f"logits 数据类型: {logits.dtype}")
+        
+        # # ==========================
+        # # 2. 打印局部/全部内容（防止输出太多刷屏，控制个数）
+        # # ==========================
+        # # 如果形状太大，只打印前几个数值
+        # print("\n===== 🔍 logits 局部数值预览（前5个 token，前10个词） =====")
+        # # 取 batch=0，seq_len=前5个位置，vocab=前10个词
+        # if logits.numel() > 100: # 如果元素太多
+        #     print(logits[0, :5, :10].cpu().detach().numpy())
+        # else:
+        #     print(logits.cpu().detach().numpy())
+    
+        # # ==========================
+        # # 3. 精准打印：你要找的 <label_token> 位置附近的值
+        # # ==========================
+        # print("\n===== 🔍 重点：寻找 label_token 位置 =====")
+        # label_id = self.tokenizer.convert_tokens_to_ids(LABEL_TOKEN)
+        # mask = (inputs['input_ids'] == label_id)[0].cpu().numpy() # 假设batch=1
+        # positions = np.where(mask)[0]
+        
+        # print(f"词表中 <label_token> 的ID: {label_id}")
+        # print(f"输入序列中 <label_token> 出现在位置: {positions}")
+    
+        # if len(positions) > 0:
+        #     pos = positions[0] # 取第一个出现的位置
+        #     print(f"\n📌 位置 {pos} 的真实 logits 值:")
+        #     # 打印这个位置的前10个词的分数
+        #     print(logits[0, pos, :10].cpu().detach().numpy()) 
+        # else:
+        #     print("❌ 没找到 <label_token>！")
+
+
+        # # ========== 你要加的打印 ==========
+        # print("\n===== yfx DEBUG get_logits =====")
+        # print("logits 有没有 NaN:", torch.isnan(logits).any().item())
+        # print("logits 有没有 Inf:", torch.isinf(logits).any().item())
+        # print("labels_pos 要找的 LABEL_TOKEN:", LABEL_TOKEN)
+        # print("input_ids 里有没有 LABEL_TOKEN:", (inputs['input_ids'] == self.tokenizer.convert_tokens_to_ids(LABEL_TOKEN)).any().item())
+        # print("输入作者ID:", inputs.get('author', 'N/A')[:10])
+        # # =================================
+
         labels_pos = torch.masked_select(torch.arange(inputs['input_ids'].shape[-1], device = self.model.device), inputs['input_ids'] == self.tokenizer.convert_tokens_to_ids(LABEL_TOKEN))
         labels_pos -= 1
         
@@ -385,6 +433,12 @@ class GLMTrainer(Trainer):
             YES_TOKEN_IDS, NO_TOKEN_IDS = self.tokenizer.convert_tokens_to_ids(['Yes','No'])
         
         yes_logit,no_logit= logits[:,labels_pos,YES_TOKEN_IDS],logits[:,labels_pos,NO_TOKEN_IDS]
+        # # ========== 你要加的打印 ==========
+        # print("\n===== yfx DEBUG =====")
+        # print("yes_logit 形状:", yes_logit.shape)
+        # print("yes_logit 有没有 NaN:", torch.isnan(yes_logit).any().item())
+        # print("no_logit 有没有 NaN:", torch.isnan(no_logit).any().item())
+        # # =================================l
         logit = F.softmax(torch.concat([yes_logit,no_logit],dim=0),dim=0)[0]
         return logit
     
@@ -394,6 +448,7 @@ class GLMTrainer(Trainer):
         # [n for n, p in opt_model.named_parameters() if (n in decay_parameters and p.requires_grad)]
     
 def cal_auc_map(pred, ground_truth):
+    # logger.info(f"===== yfx cal_auc_map =====")
     data_dict = pred
     labels_dict = ground_truth
 
@@ -427,6 +482,9 @@ def cal_auc_map(pred, ground_truth):
             if item in data_dict[aid]:
                 cur_labels.append(1)
                 cur_preds.append(data_dict[aid][item])
+                # # ========== 你要加的打印 ==========
+                # print(f"yfx 1 作者 {aid} 预测值: {data_dict[aid][item]}, 是否NaN: {np.isnan(pred_val)}")
+                # # =================================
                 # cur_preds.append(1)
                 valid_sample_count += 1
             else:
@@ -441,6 +499,9 @@ def cal_auc_map(pred, ground_truth):
             if item in data_dict[aid]:
                 cur_labels.append(0)
                 cur_preds.append(data_dict[aid][item])
+                # # ========== 你要加的打印 ==========
+                # print(f"yfx 0 作者 {aid} 预测值: {data_dict[aid][item]}, 是否NaN: {np.isnan(data_dict[aid][item])}")
+                # # =================================
                 valid_sample_count += 1
             else:
                 missing_papers.append((aid, item))
@@ -471,7 +532,7 @@ def cal_auc_map(pred, ground_truth):
         # total_w += cur_w
 
     # 打印缺失样本统计（关键：知道舍弃了多少）
-    logger.info(f"===== 样本统计 =====")
+    logger.info(f"===== yfx 样本统计 =====")
     logger.info(f"原始总样本数: {total_sample_count}")
     logger.info(f"有效样本数: {valid_sample_count}")
     logger.info(f"缺失作者数: {len(missing_authors)} (前5个: {missing_authors[:5]})")

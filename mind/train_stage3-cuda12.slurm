@@ -1,11 +1,10 @@
 #!/bin/bash
 #SBATCH --job-name=mind_stage3
-#SBATCH --gres=gpu:1
-#SBATCH --nodelist=gpu-6000ada-3
-#SBATCH --constraint=gpu
+#SBATCH --gres=gpu:a6000:1
+#SBATCH --nodelist=gpu-a6000-1
 #SBATCH --time=12:00:00
-#SBATCH --output=stage3_%j.out
-#SBATCH --error=stage3_%j.err
+#SBATCH --output=../log/mind/stage3_%j.out
+#SBATCH --error=../log/mind/stage3_%j.err
 #SBATCH --mem=128G
 #SBATCH --cpus-per-task=16  # 关键！给1个进程分配16核CPU（8核/进程是最低标准）
 
@@ -23,7 +22,7 @@ do
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] GPU MEM: $gpu_mem | CPU MEM: $cpu_mem"
     sleep 1
 done
-) > resource_monitor.log &
+) > ../log/mind/resource_monitor.log &
 
 # 保存监控进程 PID
 MONITOR_PID=$!
@@ -33,6 +32,7 @@ module unload CUDA
 module load CUDA/12.1.1
 module load cuDNN/8.9.2.26-CUDA-12.1.1
 module load Miniforge3
+source ~/.bashrc
 conda activate mind
 
 # 在这里注入你的 WandB API Key
