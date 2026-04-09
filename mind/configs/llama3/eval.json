@@ -25,9 +25,9 @@
     "shuffle_profile":false,
     "use_graph":true,
     "enable_graph_proj_requires_grad":false,
-    "graph_proj_ckpt_path":"output/llama3/stage3/checkpoint-50/pytorch_model.bin",
+    "graph_proj_ckpt_path":"output/llama3/stage3/checkpoint-60/pytorch_model.bin",
 
-    "max_source_length":8192,
+    "max_source_length":4096,
     "per_device_train_batch_size":1,
     "per_device_eval_batch_size":1,
     "gradient_accumulation_steps":16,

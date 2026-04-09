@@ -1,12 +1,12 @@
 #!/bin/bash
 #SBATCH --job-name=mind_stage3
-#SBATCH --gres=gpu:a6000:1
-#SBATCH --nodelist=gpu-a6000-1
-#SBATCH --time=12:00:00
+#SBATCH --gres=gpu:6000ada:1
+#SBATCH --nodelist=gpu-6000ada-1
+#SBATCH --time=24:00:00
 #SBATCH --output=../log/mind/stage3_%j.out
 #SBATCH --error=../log/mind/stage3_%j.err
-#SBATCH --mem=128G
-#SBATCH --cpus-per-task=16  # 关键！给1个进程分配16核CPU（8核/进程是最低标准）
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=64G
 
 # ==============================================
 # 后台每秒记录 GPU 显存 + CPU 内存

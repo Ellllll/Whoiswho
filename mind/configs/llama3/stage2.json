@@ -5,7 +5,7 @@
     "pub_data":"data/IND-WhoIsWho/pid_to_info_all.json",
     "eval_data":"data/IND-WhoIsWho/ind_valid_author.json",
     "eval_ground_truth":"data/IND-WhoIsWho-valid/ind_valid_author_ground_truth.json",
-    "output_dir": "output/llama3/stage2",
+    "output_dir": "output/llama3/stage2_4096",
     "run_name": "stage2",
     "preprocessing_num_workers": 1,
 
@@ -16,10 +16,10 @@
 
 
 
-    "max_source_length": 2048,
-    "per_device_train_batch_size": 2,
-    "per_device_eval_batch_size": 2,
-    "gradient_accumulation_steps": 8,
+    "max_source_length": 4096,
+    "per_device_train_batch_size": 1,
+    "per_device_eval_batch_size": 1,
+    "gradient_accumulation_steps": 16,
     
     "enable_llm_requires_grad": false,
     
