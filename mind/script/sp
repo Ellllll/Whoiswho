@@ -1,0 +1,2 @@
+tmux new-window -t shared -n 1
+tmux select-window -t shared:1

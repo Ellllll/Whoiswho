@@ -85,6 +85,16 @@ bash script/eval.sh
 
 ```
 
+### RoBERTa Baseline With MIND Prompt
+
+This baseline keeps the MIND prompt wording, but runs a RoBERTa pair-classification model instead of the LLM head.
+
+```bash
+bash script/roberta_baseline_fdh.sh
+```
+
+The default config is [configs/roberta/baseline_fdh.json](/home/yang1078/proj/WhoIsWho/mind/configs/roberta/baseline_fdh.json). It reads the same `author_data`, `pub_data`, `eval_data`, and `eval_ground_truth` files as the MIND pipeline, and writes predictions to `output/roberta/fdh_baseline/predict_res.json`.
+
 ## Citation
 ```
 @article{pang2024mindeffectiveincorrectassignment,

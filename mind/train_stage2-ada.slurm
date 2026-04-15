@@ -37,7 +37,10 @@ source ~/.bashrc
 conda activate mind
 
 # 在这里注入你的 WandB API Key
-export WANDB_API_KEY="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"
+if [[ -z "${WANDB_API_KEY:-}" ]]; then
+    echo "WANDB_API_KEY is not set" >&2
+    exit 1
+fi
 export WANDB_MODE=online
 
 export WANDB_PROJECT="mind-stage2-training"  # 自定义项目名

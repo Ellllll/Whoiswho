@@ -33,10 +33,14 @@ module unload CUDA
 module load CUDA/12.6.0
 module load cuDNN/9.5.0.50-CUDA-12.6.0
 module load Miniforge3
+source ~/.bashrc
 conda activate /projects/whoiswho/mind-stage3-cuda13
 
 # 在这里注入你的 WandB API Key
-export WANDB_API_KEY="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"
+if [[ -z "${WANDB_API_KEY:-}" ]]; then
+    echo "WANDB_API_KEY is not set" >&2
+    exit 1
+fi
 export WANDB_MODE=online
 
 export WANDB_PROJECT="mind-stage3-training"  # 自定义项目名
@@ -45,11 +49,8 @@ export WANDB_NAME="llama3-8b-stage3"
 mkdir -p output/llama3
 
 cd /home/yang1078/proj/WhoIsWho/mind
-echo "=== before run ==="
-nvidia-smi --query-gpu=index,name,memory.used,memory.total --format=csv
+
 bash script/stage3.sh
-echo "=== after run ==="
-nvidia-smi --query-gpu=index,name,memory.used,memory.total --format=csv
 
 # 停止 GPU 监控
 kill $MONITOR_PID

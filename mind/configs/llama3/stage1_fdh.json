@@ -1,0 +1,38 @@
+{
+    "model_name_or_path":"/projects/whoiswho/model/Meta-Llama-3-8B",
+    "ptm_model_path":"/projects/whoiswho/model/roberta-base",
+    "author_data":"/projects/whoiswho/data/finance/fdh/mind_format_trainfgt2_eval3to1_norm300_split/author_data.json",
+    "pub_data":"/projects/whoiswho/data/finance/fdh/mind_format_trainfgt2_eval3to1_norm300_split/pub_data.json",
+    "eval_data":"/projects/whoiswho/data/finance/fdh/mind_format_trainfgt2_eval3to1_norm300_split/eval_author.json",
+    "eval_ground_truth":"/projects/whoiswho/data/finance/fdh/mind_format_trainfgt2_eval3to1_norm300_split/eval_data.json",
+    "output_dir":"output/llama3/fdh_stage1",
+    "run_name":"fdh_stage1",
+    "preprocessing_num_workers":20,
+
+    "lora_rank":8,
+    "lora_alpha":16,
+    "lora_dropout":0.05,
+    "lora_ckpt_path":null,
+
+    "enable_llm_requires_grad":true,
+
+    "max_source_length":4096,
+    "per_device_train_batch_size":1,
+    "per_device_eval_batch_size":1,
+    "gradient_accumulation_steps":16,
+
+    "num_train_epochs":6,
+    "warmup_ratio":0.1,
+    "lr_scheduler_type":"cosine",
+    "learning_rate":1e-4,
+
+    "feature":"title",
+    "use_chat_template":false,
+
+    "bf16":true,
+    "seed":42,
+    "save_steps":100,
+    "eval_steps":100,
+    "save_only_model":true,
+    "deepspeed":"configs/ds_zero_1.json"
+}

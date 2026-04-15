@@ -262,6 +262,10 @@ class GLMTrainer(Trainer):
                 output_dir = args.output_dir if output_dir is None else output_dir
                 with open(os.path.join(output_dir,f"predict_res.json"), 'w') as f:
                     json.dump(overall_result, f)
+                preview = build_prediction_preview(overall_result, ground_truth)
+                with open(os.path.join(output_dir, "predict_preview.json"), 'w') as f:
+                    json.dump(preview, f, ensure_ascii=False, indent=2)
+                log_prediction_preview(preview, "predict_without_train")
             if ground_truth is not None:
                 try:
                     AUCs,MAPs = cal_auc_map(overall_result,ground_truth)
@@ -357,6 +361,10 @@ class GLMTrainer(Trainer):
             os.makedirs(os.path.join(args.output_dir,f"result"),exist_ok=True)
             with open(os.path.join(args.output_dir,f"result/step-{self.state.global_step}.json"), 'w') as f:
                 json.dump(overall_result, f)   
+            preview = build_prediction_preview(overall_result, self.eval_ground_truth)
+            with open(os.path.join(args.output_dir, f"result/step-{self.state.global_step}-preview.json"), 'w') as f:
+                json.dump(preview, f, ensure_ascii=False, indent=2)
+            log_prediction_preview(preview, f"eval step {self.state.global_step}")
              
             AUCs,MAPs = cal_auc_map(overall_result,self.eval_ground_truth)
 
@@ -557,6 +565,36 @@ def compute_metrics(preds,inputs,ground_truth):
             res[author][pubs[i]] = logits[i].item()
     AUC,MAP = cal_auc_map(res,ground_truth)
     return {"AUC":AUC,"MAP":MAP}
+
+def build_prediction_preview(overall_result, ground_truth=None, limit=20):
+    preview = []
+    for author, pubs in overall_result.items():
+        normal_pubs = set()
+        outlier_pubs = set()
+        if ground_truth is not None and author in ground_truth:
+            normal_pubs = set(ground_truth[author].get("normal_data", []))
+            outlier_pubs = set(ground_truth[author].get("outliers", []))
+        for pub, logit in pubs.items():
+            item = {
+                "author": author,
+                "pub": pub,
+                "score": round(float(logit), 6),
+            }
+            if pub in normal_pubs:
+                item["label"] = 1
+            elif pub in outlier_pubs:
+                item["label"] = 0
+            preview.append(item)
+    preview.sort(key=lambda item: item["score"], reverse=True)
+    return preview[:limit]
+
+def log_prediction_preview(preview, prefix):
+    logger.info(f"===== {prefix} prediction preview ({len(preview)} samples) =====")
+    for item in preview:
+        if "label" in item:
+            logger.info(f"author={item['author']} pub={item['pub']} score={item['score']:.6f} label={item['label']}")
+        else:
+            logger.info(f"author={item['author']} pub={item['pub']} score={item['score']:.6f}")
 
 class INDTrainer(Trainer):
     def __init__(self, *args, **kwargs):

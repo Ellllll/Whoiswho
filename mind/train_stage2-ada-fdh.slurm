@@ -1,10 +1,10 @@
 #!/bin/bash
-#SBATCH --job-name=mind_stage3
+#SBATCH --job-name=mind_fdh_stage2
 #SBATCH --gres=gpu:6000ada:1
-#SBATCH --nodelist=gpu-6000ada-1
+#SBATCH --nodelist=gpu-6000ada-3
 #SBATCH --time=24:00:00
-#SBATCH --output=../log/mind/stage3_%j.out
-#SBATCH --error=../log/mind/stage3_%j.err
+#SBATCH --output=../log/mind/fdh_stage2_%j.out
+#SBATCH --error=../log/mind/fdh_stage2_%j.err
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=64G
 
@@ -22,7 +22,7 @@ do
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] GPU MEM: $gpu_mem | CPU MEM: $cpu_mem"
     sleep 1
 done
-) > ../log/mind/resource_monitor.log &
+) > ../log/mind/resource_monitor_fdh_stage2.log &
 
 # 保存监控进程 PID
 MONITOR_PID=$!
@@ -42,14 +42,15 @@ if [[ -z "${WANDB_API_KEY:-}" ]]; then
 fi
 export WANDB_MODE=online
 
-export WANDB_PROJECT="mind-stage3-training"  # 自定义项目名
-export WANDB_NAME="llama3-8b-stage3" 
+export WANDB_PROJECT="mind-fdh-stage2-training"
+export WANDB_NAME="llama3-8b-fdh-stage2"
 
 mkdir -p output/llama3
 
 cd /home/yang1078/proj/WhoIsWho/mind
 
-bash script/stage3.sh
+bash script/stage2_fdh.sh
+
 
 # 停止 GPU 监控
 kill $MONITOR_PID

@@ -130,9 +130,9 @@ class INDPacking(Dataset): #for train data
         self.author, self.pub = dataset 
         self.ptm_tokenizer = ptm_tokenizer
 
-        self.instruct = "Identify the abnormal text from the text collection according to the following rules:\n Here is a collection of paper titles: \n ### {} \n Determine whether the following is true and answer 'Yes' or 'No'. {}"
+        self.instruct = "Identify whether the candidate transaction matches the account's normal behavior pattern.\n Here is a collection of historical transactions of the account:\n ### {} \n Determine whether the following statement is true and answer 'Yes' or 'No'. {}"
 
-        self.local_instruct = "\"{}\" belongs to the main cluster. "+ LABEL_TOKEN + "." 
+        self.local_instruct = "\"{}\" belongs to the account's normal behavior pattern. " + LABEL_TOKEN + "."
         self.instruct_length = len(self.tokenizer.tokenize(self.instruct+self.local_instruct))
         if use_graph:
             with open(self.model_args.graph_path, 'rb') as f:
@@ -141,17 +141,21 @@ class INDPacking(Dataset): #for train data
         self.mode = mode
         if self.mode == "train":
             if data_args.sample :
+                normal_to_fraud_ratio = 4
                 for _ in range(4):
                     for key in self.author.keys():
-                        if len(self.author[key]['outliers']) < len(self.author[key]['normal_data']): 
-                            pos_set = random.sample(self.author[key]['normal_data'],len(self.author[key]['outliers']))
-                            neg_set = self.author[key]['outliers']
-                        elif len(self.author[key]['outliers']) > len(self.author[key]['normal_data']):
-                            neg_set = random.sample(self.author[key]['outliers'],len(self.author[key]['normal_data']))
-                            pos_set = self.author[key]['normal_data']
+                        normal_data = self.author[key]['normal_data']
+                        outliers = self.author[key]['outliers']
+                        if len(normal_data) >= len(outliers) * normal_to_fraud_ratio:
+                            pos_set = random.sample(normal_data, len(outliers) * normal_to_fraud_ratio)
+                            neg_set = outliers
                         else:
-                            neg_set = self.author[key]['outliers']
-                            pos_set = self.author[key]['normal_data']
+                            pos_set = normal_data
+                            target_outlier_count = max(1, len(normal_data) // normal_to_fraud_ratio)
+                            if len(outliers) > target_outlier_count:
+                                neg_set = random.sample(outliers, target_outlier_count)
+                            else:
+                                neg_set = outliers
                         set = neg_set+pos_set
                         random.shuffle(set)
                         for i in range(len(set)//model_args.packing_size):

@@ -4,3 +4,4 @@ __pycache__/
 log/
 doc/
 mind/eval_*
+mind/hgt/output
